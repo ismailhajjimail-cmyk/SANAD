@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sanad — Caisse de solidarité</title>
+<meta name="theme-color" content="#2F45C6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sanad">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#F3F5FB; --surface:#FFFFFF; --surface-2:#F8F9FD; --ink:#151C3B; --muted:#5A6386; --line:#E1E5F0;
+  --primary:#2F45C6; --primary-ink:#FFFFFF; --primary-soft:#E6E9FB;
+  --mint:#14906A; --mint-soft:#DDF3EA; --saffron:#C98A12; --saffron-soft:#FBEFD5; --rose:#C9433F; --rose-soft:#FBE3E2;
+  --grey-tile:#EDEFF5; --shadow:0 1px 2px rgba(21,28,59,.06),0 8px 24px -12px rgba(21,28,59,.18);
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1330; --surface:#161C3E; --surface-2:#1B2248; --ink:#E9EBF8; --muted:#A0A7CC; --line:#2A3262;
+    --primary:#8291FF; --primary-ink:#0E1330; --primary-soft:#232C63;
+    --mint:#3FCB9B; --mint-soft:#163C38; --saffron:#F0B847; --saffron-soft:#3D3320; --rose:#F07B76; --rose-soft:#43232E;
+    --grey-tile:#1F2650; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -12px rgba(0,0,0,.6); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1330; --surface:#161C3E; --surface-2:#1B2248; --ink:#E9EBF8; --muted:#A0A7CC; --line:#2A3262;
+  --primary:#8291FF; --primary-ink:#0E1330; --primary-soft:#232C63;
+  --mint:#3FCB9B; --mint-soft:#163C38; --saffron:#F0B847; --saffron-soft:#3D3320; --rose:#F07B76; --rose-soft:#43232E;
+  --grey-tile:#1F2650; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -12px rgba(0,0,0,.6); color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;min-height:100%;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* Layout */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:calc(100vh - env(safe-area-inset-top,0px));padding:22px 16px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:20px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px}
+.brand svg{width:34px;height:34px;flex:none}
+.brand b{font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+.brand small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--muted);text-decoration:none;font-weight:600}
+.nav a svg{width:20px;height:20px;flex:none}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a.on{background:var(--primary-soft);color:var(--primary)}
+.side .foot{margin-top:auto;font-size:12.5px;color:var(--muted);padding:0 8px;display:flex;flex-direction:column;gap:8px}
+.save-state{display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mint);flex:none}
+.dot.busy{background:var(--saffron)} .dot.err{background:var(--rose)}
+.main{min-width:0;padding:28px clamp(16px,3vw,40px) 120px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.top h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;margin:0;line-height:1.05}
+.top p{margin:6px 0 0;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:10px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn svg{width:18px;height:18px}
+.btn.pri{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.in{background:var(--mint);border-color:var(--mint);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--rose);border-color:var(--rose-soft)}
+.btn.sm{padding:6px 10px;font-size:13.5px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.panel h2{font-family:var(--display);font-size:18px;font-weight:700;margin:0 0 14px;letter-spacing:-.01em}
+.panel h2 small{font-family:var(--body);font-weight:500;color:var(--muted);font-size:13.5px;margin-left:8px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-dash{grid-template-columns:1.35fr 1fr}
+@media (max-width:1100px){.g-dash,.g3{grid-template-columns:1fr}}
+@media (max-width:760px){.g2{grid-template-columns:1fr}}
+.muted{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--surface-2);border:1px solid var(--line);white-space:nowrap}
+.chip.ok{background:var(--mint-soft);color:var(--mint);border-color:transparent}
+.chip.warn{background:var(--saffron-soft);color:var(--saffron);border-color:transparent}
+.chip.bad{background:var(--rose-soft);color:var(--rose);border-color:transparent}
+.chip.pri{background:var(--primary-soft);color:var(--primary);border-color:transparent}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;background:var(--primary);color:#fff;border-radius:20px;padding:26px 26px 22px;box-shadow:var(--shadow)}
+:root[data-theme="dark"] .hero{background:#2B3AA8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hero{background:#2B3AA8}}
+.hero .pattern{position:absolute;right:-60px;top:-60px;width:320px;height:320px;opacity:.16;pointer-events:none}
+.hero .lbl{font-weight:600;opacity:.85}
+.hero .big{font-family:var(--display);font-weight:800;font-size:clamp(40px,6vw,62px);letter-spacing:-.03em;line-height:1;margin:6px 0 16px}
+.hero .big span{font-size:.45em;font-weight:700;opacity:.8;margin-left:6px}
+.hero .row{display:flex;gap:28px;flex-wrap:wrap;position:relative}
+.hero .row div{min-width:120px}
+.hero .row b{display:block;font-family:var(--display);font-size:22px;font-weight:700}
+.hero .row small{opacity:.8;font-weight:500}
+.hero .gap-ok{color:#9FF0CF} .hero .gap-bad{color:#FFD2CF}
+
+.kpi{display:flex;flex-direction:column;gap:6px}
+.kpi .v{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:-.02em;line-height:1.1}
+.bar{height:10px;border-radius:99px;background:var(--grey-tile);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--mint);border-radius:99px;transition:width .5s}
+.list{display:flex;flex-direction:column}
+.list .it{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.list .it:first-child{border-top:0}
+.list .it .grow{flex:1;min-width:0}
+.list .it .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--primary-soft);color:var(--primary);flex:none;font-family:var(--display)}
+
+/* Tables */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:13px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:40px;width:100%}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--primary-soft)}
+.toolbar input[type=search]{width:240px}
+.toolbar select{width:auto}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{position:sticky;top:0;background:var(--surface-2);text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+td.r,th.r{text-align:right}
+tfoot td{font-weight:700;background:var(--surface-2)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+
+/* Tracking matrix */
+.mx{border-collapse:separate;border-spacing:0}
+.mx th,.mx td{border-bottom:1px solid var(--line);padding:3px 3px}
+.mx th.name,.mx td.name{position:sticky;left:0;background:var(--surface);z-index:2;padding-left:12px;padding-right:10px;min-width:230px;max-width:270px}
+.mx th.name{background:var(--surface-2);z-index:3}
+.mx td.name .nm{display:flex;align-items:center;gap:8px}
+.mx td.name button{all:unset;cursor:pointer;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.mx td.name .amt{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mx tr.inact td.name button{color:var(--muted);font-weight:500}
+.mx td.name button:hover{color:var(--primary)}
+.mx th.m{text-align:center;min-width:54px}
+.mx th.sortable{cursor:pointer}
+.cell{width:50px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:11.5px;font-weight:700;margin:auto;position:relative}
+.cell.paid{background:var(--mint-soft);color:var(--mint)}
+.cell.partial{background:var(--saffron-soft);color:var(--saffron)}
+.cell.late{background:var(--rose-soft);color:var(--rose)}
+.cell.due{background:transparent;border:1.5px dashed var(--saffron);color:var(--saffron)}
+.cell.future{background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
+.cell.none{background:transparent;color:var(--line)}
+.cell.now{box-shadow:0 0 0 2px var(--primary)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+
+/* Month picker (signature) */
+.yearnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.yearnav b{font-family:var(--display);font-size:20px}
+.months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mt{position:relative;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 8px 8px;text-align:left;cursor:pointer;min-height:62px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .12s, background .12s}
+.mt b{font-family:var(--display);font-weight:700;font-size:15px}
+.mt small{font-size:11.5px;color:var(--muted);font-weight:600}
+.mt:hover:not([disabled]){border-color:var(--primary)}
+.mt.sel{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.mt.sel small{color:inherit;opacity:.85}
+.mt.sel:active{transform:scale(.97)}
+.mt[disabled]{cursor:not-allowed;background:var(--grey-tile);border-color:transparent;color:var(--muted)}
+.mt[disabled] b{text-decoration:line-through;text-decoration-thickness:1px;opacity:.8}
+.mt .star{position:absolute;right:7px;top:7px;width:15px;height:15px;color:var(--mint)}
+.mt.part{border-color:var(--saffron);border-style:dashed}
+.mt.late:not(.sel){border-color:var(--rose-soft);background:var(--rose-soft)}
+.mt.late:not(.sel) small{color:var(--rose)}
+.split{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 13px;border-radius:8px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(21,28,59,.15)}
+
+/* Modal & drawer */
+.scrim{position:fixed;inset:0;background:rgba(14,19,48,.45);z-index:60;display:none;align-items:center;justify-content:center;padding:16px}
+.scrim.open{display:flex}
+.modal{background:var(--surface);border-radius:20px;width:min(720px,100%);max-height:calc(100vh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);animation:pop .18s ease-out}
+.modal.wide{width:min(960px,100%)}
+@keyframes pop{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:2}
+.mh h3{margin:0;font-family:var(--display);font-size:21px;font-weight:800;letter-spacing:-.01em}
+.mb{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.mf{display:flex;justify-content:space-between;gap:10px;padding:16px 22px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+.amount-in{font-family:var(--display);font-size:24px!important;font-weight:700;min-height:52px!important}
+.x{border:0;background:transparent;cursor:pointer;padding:6px;border-radius:8px;color:var(--muted)}
+.x:hover{background:var(--surface-2)}
+
+/* Families */
+.fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+.fam{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;text-align:left}
+.fam:hover{border-color:var(--primary)}
+.fam.ended{opacity:.7}
+.fam h3{margin:0;font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-.01em}
+.fam .kids{display:flex;gap:6px;flex-wrap:wrap}
+.fam .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.fam .stats b{font-family:var(--display);font-size:18px;display:block}
+.fam .stats small{color:var(--muted);font-size:12.5px}
+.kid-row{display:grid;grid-template-columns:1.6fr 1fr 90px 36px;gap:8px;align-items:center}
+@media (max-width:600px){.kid-row{grid-template-columns:1fr 1fr}}
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.docs label{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px}
+.docs input{width:18px;height:18px;accent-color:var(--mint)}
+.sec-title{font-family:var(--display);font-weight:700;font-size:16px;margin:4px 0 -4px}
+
+/* Chart */
+.chart svg{width:100%;height:auto;display:block}
+.chart .lg{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.chart .lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* Treasury */
+.recon{display:flex;flex-direction:column;gap:0;font-size:15px}
+.recon .ln{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.recon .ln:first-child{border-top:0}
+.recon .ln b{font-family:var(--display);font-size:17px}
+.recon .ln.tot{border-top:2px solid var(--ink)}
+.recon .ln.gap b{font-size:22px}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:12px;font-weight:600;opacity:0;transition:all .25s;z-index:80;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.banner{display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:12px;background:var(--saffron-soft);color:var(--ink);margin-bottom:18px;font-size:14px}
+.switch{display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.switch input{width:20px;height:20px;accent-color:var(--primary)}
+.switch b{display:block}
+.switch small{color:var(--muted)}
+
+/* Mobile nav */
+.tabbar{display:none}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .main{padding-top:18px}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:40;justify-content:space-around}
+  .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;color:var(--muted);text-decoration:none;font-weight:600;padding:4px 2px;min-width:0;flex:1}
+  .tabbar a svg{width:22px;height:22px}
+  .tabbar a.on{color:var(--primary)}
+  .mobile-brand{display:flex!important}
+  .months{grid-template-columns:repeat(3,1fr)}
+}
+.mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:14px}
+.mobile-brand svg{width:28px;height:28px}
+.mobile-brand b{font-family:var(--display);font-weight:800;font-size:17px}
+.loading{display:grid;place-items:center;min-height:60vh;color:var(--muted);gap:14px;text-align:center}
+.loading svg{width:56px;height:56px;color:var(--primary);animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.5l3.1 4.3 5.3-.7-.7 5.3 4.3 3.1-4.3 3.1.7 5.3-5.3-.7L12 25.5l-3.1-4.3-5.3.7.7-5.3L0 13.5l4.3-3.1-.7-5.3 5.3.7z" transform="translate(0 -1.5)"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-fam" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M2.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6M14 20c0-2.6 1.4-4.6 3-4.6s3.5 2 3.5 4.6"/></g></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></g></symbol>
+    <symbol id="i-in" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></g></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></g></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5M5 10v7M9.7 10v7M14.3 10v7M19 10v7M3 20h18"/></g></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7M21 3l-9 9"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-l" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-r" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" style="color:var(--primary)"><use href="#star"/></svg>
+      <div><b id="appName">Sanad</b><small>Caisse de solidarité</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">
+      <div class="save-state"><span class="dot" id="saveDot"></span><span id="saveTxt">Chargement…</span></div>
+      <button class="btn sm ghost" id="themeBtn" style="justify-content:flex-start;padding-left:0">Changer de thème</button>
+    </div>
+  </aside>
+  <main class="main" id="main">
+    <div class="loading"><svg viewBox="0 0 24 24"><use href="#star"/></svg><div>Chargement de vos données…</div></div>
+  </main>
+</div>
+<nav class="tabbar" id="tabbar"></nav>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="seed">null</script>
+<script>
+"use strict";
+const TEMPLATE = "<!doctype html>\n" + document.documentElement.outerHTML;
+/* ============ Helpers ============ */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const MSHORT = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const nf = new Intl.NumberFormat("fr-FR", {maximumFractionDigits: 2});
+const money = v => nf.format(Math.round((+v||0)*100)/100) + "\u00a0DH";
+const moneyShort = v => nf.format(Math.round(+v||0));
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const curYM = () => today().slice(0,7);
+const ymAdd = (ym, n) => { let [y,m]=ym.split("-").map(Number); m+=n; y+=Math.floor((m-1)/12); m=((m-1)%12+12)%12+1; return y+"-"+String(m).padStart(2,"0"); };
+const ymLabel = ym => { if(!ym) return ""; const [y,m]=ym.split("-"); return cap(MONTHS[+m-1])+" "+y; };
+const ymShort = ym => { const [y,m]=ym.split("-"); return MSHORT[+m-1]+" "+y.slice(2); };
+const fmtDate = d => { if(!d) return "—"; const [y,m,dd]=d.split("-"); return dd+"/"+m+"/"+y; };
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const age = born => { if(!born) return null; const b=new Date(born), n=new Date(); let a=n.getFullYear()-b.getFullYear(); if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate())) a--; return a; };
+const initials = n => (n||"?").replace(/\(.*?\)/g,"").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+const sum = (a, f=x=>x) => a.reduce((s,x)=>s+(+f(x)||0),0);
+function rangeLabel(keys){
+  const ms = keys.filter(k=>!k.startsWith("EVT")).sort();
+  if(!ms.length) return "";
+  if(ms.length===1) return ymLabel(ms[0]);
+  let contiguous = ms.every((k,i)=>i===0||ymAdd(ms[i-1],1)===k);
+  return contiguous ? ymLabel(ms[0])+" à "+ymLabel(ms[ms.length-1]) : ms.map(ymLabel).join(", ");
+}
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ============ State & persistence ============ */
+const DOCS = ["meta","donors","families","receipts","payments","hist","treasury"];
+const LS_KEY = "caisse-solidaire-cache-v1";
+let S = null;               // full state
+let DB = null, BASE = null; // db namespace & per-user collection
+let DL = null;              // downloads namespace
+const dirty = new Set(), writing = new Set();
+let online = false;
+
+function blank(){
+  return {meta:{name:"Sanad",version:1,banks:["CIH","CDM","Cash"],docsList:["CIN de la mère","Certificat de décès du père","Livret de famille","Certificats scolaires","Formulaire famille","Photos","Résultats scolaires","Attestation RIB"]},
+    donors:{items:[{id:0,name:"Anonyme",monthly:0,active:true,anon:true,phone:"",note:""}]},families:{items:[]},receipts:{items:[]},payments:{items:[]},hist:{items:{}},treasury:{reals:[],items:[]}};
+}
+
+function setSave(state, txt){
+  const d=$("#saveDot"); d.className="dot"+(state==="busy"?" busy":state==="err"?" err":"");
+  $("#saveTxt").textContent=txt;
+}
+function touch(...docs){
+  S.meta.savedAt=new Date().toISOString(); cacheLocal();
+  setSave("ok","Enregistré dans ce navigateur");
+}
+function lsKey(){ return LS_KEY+"-"+((S&&S.meta&&S.meta.dataset)||"main"); }
+function cacheLocal(){ try{ localStorage.setItem(lsKey(), JSON.stringify(S)); }catch(e){ setSave("err","Impossible d'enregistrer dans ce navigateur — faites une sauvegarde"); } }
+function boot(){
+  applyTheme();
+  let seed=null; try{ seed=JSON.parse(document.getElementById("seed").textContent); }catch(e){}
+  const ds=(seed&&seed.meta&&seed.meta.dataset)||"main";
+  let local=null; try{ const v=localStorage.getItem(LS_KEY+"-"+ds); local=v?JSON.parse(v):null; }catch(e){}
+  if(local && seed && (seed.meta.savedAt||"") > (local.meta.savedAt||"")) local=null; // le fichier est plus récent
+  S = local || seed || null;
+  if(!S){ renderEmpty(); return; }
+  if(!S.meta.dataset) S.meta.dataset=ds;
+  setSave("ok", local ? "Enregistré dans ce navigateur" : "Données du fichier");
+  route();
+}
+/* ============ Derived data ============ */
+function donorById(id){ return S.donors.items.find(d=>d.id===id); }
+function famById(id){ return S.families.items.find(f=>f.id===id); }
+function coverage(excludeId){
+  const cov={};
+  for(const [k,h] of Object.entries(S.hist.items||{})){ cov[k]={...h}; }
+  for(const r of S.receipts.items){
+    if(!r.al || r.id===excludeId || r.n==null) continue;
+    const c = cov[r.n] || (cov[r.n]={});
+    for(const [k,v] of Object.entries(r.al)) c[k]=(c[k]||0)+v;
+  }
+  return cov;
+}
+function donorBounds(d, cov){
+  const ks=Object.keys(cov[d.id]||{}).filter(k=>!k.startsWith("EVT")).sort();
+  return {first: d.start || ks[0] || null, last: ks[ks.length-1] || null};
+}
+function cellStatus(d, ym, cov, b){
+  const v=(cov[d.id]||{})[ym]||0, now=curYM();
+  if(v>0){ if(d.monthly>0 && v < d.monthly) return "partial"; return "paid"; }
+  if(d.anon) return "none";
+  if(!b.first || ym < b.first) return "none";
+  if(!d.active && (!b.last || ym > b.last)) return "none";
+  if(d.endYM && ym > d.endYM) return "none";
+  return ym < now ? "late" : ym===now ? "due" : "future";
+}
+function lateMonths(d, cov, window=12){
+  const b=donorBounds(d,cov), now=curYM(), out=[];
+  for(let i=window-1;i>=0;i--){ const ym=ymAdd(now,-i); if(cellStatus(d,ym,cov,b)==="late") out.push(ym); }
+  return out;
+}
+function payMap(excludeId){
+  const m={};
+  for(const p of S.payments.items){
+    if(p.id===excludeId) continue;
+    const f=m[p.f]||(m[p.f]={}); const c=f[p.p]||(f[p.p]={m:0,x:0});
+    c[p.k==="m"?"m":"x"]+=p.a;
+  }
+  return m;
+}
+const totRec = () => sum(S.receipts.items, r=>r.a);
+const totPay = () => sum(S.payments.items, p=>p.a);
+function lastReal(){ return [...S.treasury.reals].sort((a,b)=>a.d<b.d?1:-1)[0] || null; }
+const realTotal = r => r ? sum(Object.values(r.lines||{})) : 0;
+function theoAt(date){ return sum(S.receipts.items.filter(r=>!date||r.d<=date), r=>r.a) - sum(S.payments.items.filter(p=>!date||(p.d||"")<=date), p=>p.a); }
+function activeFams(){ return S.families.items.filter(f=>!f.end); }
+function donorName(n){ if(n==null) return "Reprise à nouveau"; const d=donorById(n); return d?d.name:"Cotisant #"+n; }
+
+/* ============ Navigation ============ */
+const PAGES = [
+  {id:"tableau", t:"Tableau de bord", s:"Tableau", i:"i-home"},
+  {id:"cotisations", t:"Suivi des cotisations", s:"Suivi", i:"i-grid"},
+  {id:"recettes", t:"Recettes", s:"Recettes", i:"i-in"},
+  {id:"paiements", t:"Paiements", s:"Paiements", i:"i-out"},
+  {id:"familles", t:"Familles", s:"Familles", i:"i-fam"},
+  {id:"tresorerie", t:"Trésorerie", s:"Tréso", i:"i-bank"},
+  {id:"exports", t:"Exports & sauvegarde", s:"Exports", i:"i-share"},
+];
+function navHTML(cls){ return PAGES.map(p=>`<a href="#${p.id}" data-p="${p.id}"><svg><use href="#${p.i}"/></svg><span>${cls==="tab"?p.s:p.t}</span></a>`).join(""); }
+$("#nav").innerHTML = navHTML(); $("#tabbar").innerHTML = navHTML("tab");
+window.addEventListener("hashchange", route);
+function route(){
+  if(!S) return;
+  $("#appName").textContent = S.meta.name || "Sanad";
+  const id = (location.hash||"").slice(1);
+  const p = PAGES.find(x=>x.id===id) || PAGES[0];
+  $$(".nav a, .tabbar a").forEach(a=>a.classList.toggle("on", a.dataset.p===p.id));
+  const fn = {tableau:pgDash, cotisations:pgTrack, recettes:pgRec, paiements:pgPay, familles:pgFam, tresorerie:pgTreso, exports:pgExport}[p.id];
+  $("#main").innerHTML = `<div class="mobile-brand"><svg viewBox="0 0 24 24" style="color:var(--primary)"><use href="#star"/></svg><b>${esc(S.meta.name)}</b></div>` + fn();
+  bindPage(p.id);
+}
+function topBar(title, sub, extra=""){
+  return `<div class="top"><div><h1>${title}</h1>${sub?`<p>${sub}</p>`:""}</div><div class="actions">${extra}
+    <button class="btn in" data-act="newRec"><svg><use href="#i-in"/></svg><span class="lbl">Encaisser</span></button>
+    <button class="btn pri" data-act="newPay"><svg><use href="#i-out"/></svg><span class="lbl">Verser</span></button></div></div>`;
+}
+document.addEventListener("click", e=>{
+  const a = e.target.closest("[data-act]"); if(!a) return;
+  const act=a.dataset.act, v=a.dataset.v;
+  if(act==="newRec") openReceipt(null, v!=null?+v:null);
+  else if(act==="newPay") openPayment(null, v!=null?+v:null);
+  else if(act==="editRec") openReceipt(v);
+  else if(act==="editPay") openPayment(v);
+  else if(act==="donor") openDonor(+v);
+  else if(act==="newDonor") openDonor(null);
+  else if(act==="fam") openFamily(+v);
+  else if(act==="newFam") openFamily(null);
+  else if(act==="bulk") openBulk();
+  else if(act==="newReal") openReal(v);
+  else if(act==="close") closeModal();
+  else if(act==="go") location.hash=v;
+});
+$("#themeBtn").onclick=()=>{
+  const cur=document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+  const nx=cur==="dark"?"light":"dark"; document.documentElement.dataset.theme=nx; try{localStorage.setItem("cs-theme",nx);}catch(e){}
+};
+function applyTheme(){ try{ const t=localStorage.getItem("cs-theme"); if(t) document.documentElement.dataset.theme=t; }catch(e){} }
+
+/* ============ Pages ============ */
+const STAR_BG = `<svg class="pattern" viewBox="0 0 100 100"><g fill="none" stroke="#fff" stroke-width="1.2">${[0,1,2].map(r=>`<g transform="translate(${r*34} ${r*0})"><path d="M50 8l9 12.5 15.4-2-2 15.4L85 43l-12.5 9 2 15.4-15.4-2L50 78l-9-12.5-15.4 2 2-15.4L15 43l12.5-9-2-15.4 15.4 2z"/></g>`).join("")}<circle cx="50" cy="43" r="16"/></g></svg>`;
+
+function pgDash(){
+  const theo=totRec()-totPay(), lr=lastReal(), real=realTotal(lr), gap=lr?real-theoAt(lr.d):null;
+  const now=curYM(), cov=coverage();
+  const actives=S.donors.items.filter(d=>d.active && !d.anon);
+  const expected=sum(actives, d=>d.monthly);
+  const got=sum(S.donors.items, d=>(cov[d.id]||{})[now]||0);
+  const pct=expected?Math.min(100,Math.round(got/expected*100)):0;
+  const fams=activeFams(), pm=payMap();
+  const famsDone=fams.filter(f=>((pm[f.id]||{})[now]||{}).m>0).length;
+  const late=actives.map(d=>({d,l:lateMonths(d,cov)})).filter(x=>x.l.length).sort((a,b)=>b.l.length-a.l.length);
+  const kids=sum(fams,f=>(f.children&&f.children.length)||f.kids||0);
+  return topBar("Vue d'ensemble", `Situation de la caisse au ${fmtDate(today())}`) + `
+  <div class="grid g-dash">
+    <div class="grid" style="align-content:start">
+      <section class="hero">${STAR_BG}
+        <div class="lbl">Trésorerie théorique</div>
+        <div class="big num">${moneyShort(theo)}<span>DH</span></div>
+        <div class="row">
+          <div><small>Recettes cumulées</small><b class="num">${moneyShort(totRec())}</b></div>
+          <div><small>Versé aux familles</small><b class="num">${moneyShort(totPay())}</b></div>
+          <div><small>Réel au ${lr?fmtDate(lr.d):"—"}</small><b class="num">${lr?moneyShort(real):"—"}</b></div>
+          <div><small>Écart</small><b class="num ${gap!=null&&Math.abs(gap)<1?"gap-ok":"gap-bad"}">${gap==null?"—":(gap>0?"+":"")+moneyShort(gap)}</b></div>
+        </div>
+      </section>
+      <section class="panel chart"><h2>Entrées et sorties <small>12 derniers mois</small></h2>${chartSVG()}</section>
+    </div>
+    <div class="grid" style="align-content:start">
+      <section class="panel"><h2>${cap(MONTHS[+now.slice(5)-1])} en un coup d'œil</h2>
+        <div class="kpi"><span class="muted">Cotisations du mois</span><div class="v num">${moneyShort(got)} <span class="muted" style="font-size:16px;font-weight:600">/ ${moneyShort(expected)} DH attendus</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+        <div class="kpi" style="margin-top:18px"><span class="muted">Salaires versés ce mois</span><div class="v num">${famsDone} <span class="muted" style="font-size:16px;font-weight:600">/ ${fams.length} familles</span></div>
+          ${famsDone<fams.length?`<div><button class="btn sm" data-act="bulk">Préparer les versements du mois</button></div>`:`<span class="chip ok">Tous les versements sont faits</span>`}</div>
+        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap"><span class="chip pri">${actives.length} cotisants actifs</span><span class="chip pri">${fams.length} familles · ${kids} enfants</span></div>
+      </section>
+      <section class="panel"><h2>Cotisations en retard <small>sur 12 mois</small></h2>
+        ${late.length?`<div class="list">${late.slice(0,8).map(x=>`<div class="it"><span class="avatar">${esc(initials(x.d.name))}</span><div class="grow"><div class="t">${esc(x.d.name)}</div><small class="muted">${x.l.length} mois · dernier : ${ymLabel(x.l[x.l.length-1])}</small></div><button class="btn sm" data-act="newRec" data-v="${x.d.id}">Encaisser</button></div>`).join("")}</div>
+        ${late.length>8?`<div style="margin-top:10px"><button class="btn sm ghost" data-act="go" data-v="cotisations">Voir les ${late.length} cotisants concernés</button></div>`:""}`
+        :`<div class="empty">Personne n'est en retard. Bravo à tous !</div>`}
+      </section>
+    </div>
+  </div>`;
+}
+function chartSVG(){
+  const now=curYM(), months=[...Array(12)].map((_,i)=>ymAdd(now,i-11));
+  const rin=months.map(m=>sum(S.receipts.items.filter(r=>r.d&&r.d.slice(0,7)===m&&!r.open),r=>r.a));
+  const rout=months.map(m=>sum(S.payments.items.filter(p=>p.d&&p.d.slice(0,7)===m),p=>p.a));
+  const max=Math.max(1,...rin,...rout), W=640,H=220,pad=28,bw=(W-pad)/12;
+  const y=v=>H-24-(v/max)*(H-44);
+  let g="";
+  for(let i=0;i<=3;i++){ const v=max*i/3, yy=y(v); g+=`<line x1="${pad}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${pad-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v>=1000?Math.round(v/1000)+"k":Math.round(v)}</text>`; }
+  months.forEach((m,i)=>{
+    const x=pad+i*bw+bw*.18, w=bw*.3;
+    g+=`<rect x="${x}" y="${y(rin[i])}" width="${w}" height="${H-24-y(rin[i])}" rx="3" fill="var(--mint)"><title>${ymLabel(m)} — encaissé ${money(rin[i])}</title></rect>`;
+    g+=`<rect x="${x+w+2}" y="${y(rout[i])}" width="${w}" height="${H-24-y(rout[i])}" rx="3" fill="var(--primary)"><title>${ymLabel(m)} — versé ${money(rout[i])}</title></rect>`;
+    g+=`<text x="${pad+i*bw+bw/2}" y="${H-6}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${MSHORT[+m.slice(5)-1].replace(".","")}</text>`;
+  });
+  return `<div class="lg"><span><i style="background:var(--mint)"></i>Encaissé</span><span><i style="background:var(--primary)"></i>Versé aux familles</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Entrées et sorties par mois">${g}</svg>`;
+}
+
+let trackYear = +curYM().slice(0,4), trackActive = true, trackQ="", trackView="year", trackSort="az";
+function sortedDonors(cov){
+  let ds=S.donors.items.filter(d=>!trackActive||d.active||d.anon);
+  if(trackQ) ds=ds.filter(d=>d.name.toLowerCase().includes(trackQ.toLowerCase()));
+  const first=d=>donorBounds(d,cov).first||"9999";
+  const byName=(a,b)=>a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
+  const cmp={az:byName, old:(a,b)=>first(a).localeCompare(first(b))||byName(a,b), new:(a,b)=>first(b).localeCompare(first(a))||byName(a,b), num:(a,b)=>a.id-b.id}[trackSort]||byName;
+  return ds.sort((a,b)=>(!!a.anon)-(!!b.anon)||cmp(a,b));
+}
+function nameCell(d){
+  return `<td class="name"><div class="nm"><button data-act="donor" data-v="${d.id}" title="${esc(d.name)}">${esc(d.name)}</button><span class="amt">${d.anon?"dons":moneyShort(d.monthly)+"/mois"}</span></div></td>`;
+}
+function pgTrack(){
+  const cov=coverage(), y=trackYear, now=curYM();
+  const ds=sortedDonors(cov);
+  const toolbar=`<div class="toolbar">
+    <div class="seg" id="trkView"><button class="${trackView==="year"?"on":""}" data-w="year">Par année</button><button class="${trackView==="all"?"on":""}" data-w="all">Depuis le début</button></div>
+    ${trackView==="year"?`<div class="seg"><button data-y="-1" aria-label="Année précédente"><svg width="16" height="16"><use href="#i-l"/></svg></button><button class="on" style="min-width:64px">${y}</button><button data-y="1" aria-label="Année suivante"><svg width="16" height="16"><use href="#i-r"/></svg></button></div>`:""}
+    <div class="seg" id="trkAct"><button class="${trackActive?"on":""}" data-a="1">Actifs</button><button class="${!trackActive?"on":""}" data-a="0">Tous</button></div>
+    <select id="trkSort" aria-label="Trier"><option value="az" ${trackSort==="az"?"selected":""}>Tri : A → Z</option><option value="old" ${trackSort==="old"?"selected":""}>Tri : plus anciens d'abord</option><option value="new" ${trackSort==="new"?"selected":""}>Tri : plus récents d'abord</option><option value="num" ${trackSort==="num"?"selected":""}>Tri : ordre du fichier</option></select>
+    <input type="search" id="trkQ" placeholder="Rechercher" value="${esc(trackQ)}" style="width:190px">
+  </div>`;
+  const legend=`<div class="legend" style="margin:-4px 0 12px"><span><i style="background:var(--mint-soft);border:1px solid var(--mint)"></i>Payé</span><span><i style="background:var(--saffron-soft);border:1px solid var(--saffron)"></i>Partiel</span><span><i style="background:var(--rose-soft);border:1px solid var(--rose)"></i>En retard</span><span><i style="border:1.5px dashed var(--saffron)"></i>Attendu ce mois</span><span><i style="border:1.5px dashed var(--line)"></i>À venir</span><span class="muted" style="margin-left:auto">${ds.length} cotisants</span></div>`;
+  const head=topBar("Suivi des cotisations","Cliquez sur un nom pour voir ou modifier le cotisant.", `<button class="btn" data-act="newDonor"><svg><use href="#i-plus"/></svg><span class="lbl">Cotisant</span></button>`);
+  if(trackView==="all"){
+    const allK=Object.values(cov).flatMap(c=>Object.keys(c)).filter(k=>!k.startsWith("EVT")).sort();
+    const y0=+(allK[0]||curYM()).slice(0,4), y1=Math.max(+curYM().slice(0,4), +(allK[allK.length-1]||curYM()).slice(0,4));
+    const yrs=[]; for(let i=y0;i<=y1;i++) yrs.push(i);
+    const yTot=(d,yy)=>sum(Object.entries(cov[d.id]||{}).filter(([k])=>k.startsWith(String(yy))||(k.startsWith("EVT")&&k.includes(String(yy)))),([,v])=>v);
+    const rows=ds.map(d=>{
+      const c=cov[d.id]||{}, b=donorBounds(d,cov), months=Object.keys(c).filter(k=>!k.startsWith("EVT")).length, tot=sum(Object.values(c));
+      return `<tr class="${!d.active&&!d.anon?"inact":""}">${nameCell(d)}<td class="num" style="font-size:12.5px;white-space:nowrap">${b.first?ymShort(b.first):"—"}</td>
+        ${yrs.map(yy=>{const v=yTot(d,yy); return `<td><div class="cell ${v?"paid":"none"}" style="width:64px">${v?moneyShort(v):"·"}</div></td>`;}).join("")}
+        <td class="r num">${months}</td><td class="r num"><b>${moneyShort(tot)}</b></td><td class="r">${d.anon?"":(()=>{const l=lateMonths(d,cov).length; return l?`<span class="chip bad">${l}</span>`:`<span class="chip ok">0</span>`;})()}</td></tr>`;
+    }).join("");
+    const grand=sum(ds,d=>sum(Object.values(cov[d.id]||{})));
+    return head+toolbar+`<div class="tbl-wrap"><table class="mx"><thead><tr><th class="name">Cotisant</th><th>Depuis</th>${yrs.map(yy=>`<th class="m">${yy}</th>`).join("")}<th class="r">Mois payés</th><th class="r">Total cumulé</th><th class="r" title="Mois en retard sur les 12 derniers mois">Retards</th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="20" class="empty">Aucun cotisant.</td></tr>`}</tbody>
+    <tfoot><tr><td class="name" style="background:var(--surface-2)">Total</td><td></td>${yrs.map(yy=>`<td class="num" style="text-align:center;font-size:12px">${moneyShort(sum(ds,d=>yTot(d,yy)))}</td>`).join("")}<td></td><td class="r num">${moneyShort(grand)}</td><td></td></tr></tfoot></table></div>
+    <p class="muted" style="font-size:13px">Les montants versés avant février 2022 (reprise à nouveau) sont répartis sur les années concernées, comme dans votre suivi Excel.</p>`;
+  }
+  const months=[...Array(12)].map((_,i)=>y+"-"+String(i+1).padStart(2,"0"));
+  const allEv=[...new Set(Object.values(cov).flatMap(c=>Object.keys(c).filter(k=>k.startsWith("EVT"))))].filter(k=>{ const yy=k.match(/\d{4}/); return yy?+yy[0]===y:false; });
+  const rows=ds.map(d=>{
+    const b=donorBounds(d,cov), c=cov[d.id]||{};
+    const tot=sum(months,m=>c[m]||0)+sum(allEv,k=>c[k]||0);
+    const late=lateMonths(d,cov).length;
+    return `<tr class="${!d.active&&!d.anon?"inact":""}">${nameCell(d)}
+      ${months.map(m=>{const st=cellStatus(d,m,cov,b), v=c[m]||0; return `<td><div class="cell ${st}${m===now?" now":""}" title="${esc(d.name)} — ${ymLabel(m)} : ${v?money(v):({late:"non payé",due:"attendu ce mois",future:"à venir",none:"—"}[st]||"")}">${v?moneyShort(v):st==="late"?"!":st==="none"?"·":st==="due"?"…":""}</div></td>`;}).join("")}
+      ${allEv.map(k=>{const v=c[k]||0; return `<td><div class="cell ${v?"paid":"none"}">${v?moneyShort(v):"·"}</div></td>`;}).join("")}
+      <td class="r num"><b>${moneyShort(tot)}</b></td><td class="r">${d.anon?"":late?`<span class="chip bad">${late}</span>`:`<span class="chip ok">0</span>`}</td></tr>`;
+  }).join("");
+  const colTot=months.map(m=>sum(ds,d=>(cov[d.id]||{})[m]||0));
+  return head+toolbar+legend+`<div class="tbl-wrap"><table class="mx"><thead><tr><th class="name">Cotisant</th>${months.map(m=>`<th class="m">${MSHORT[+m.slice(5)-1]}</th>`).join("")}${allEv.map(k=>`<th class="m" title="${esc(k.slice(4))}">${esc(k.slice(4).replace(/\s*\d{4}/,""))}</th>`).join("")}<th class="r">Total ${y}</th><th class="r" title="Mois en retard sur les 12 derniers mois">Retards</th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="16" class="empty">Aucun cotisant.</td></tr>`}</tbody>
+  <tfoot><tr><td class="name" style="background:var(--surface-2)">Total</td>${colTot.map(v=>`<td class="num" style="text-align:center;font-size:12px">${v?moneyShort(v):""}</td>`).join("")}${allEv.map(k=>`<td class="num" style="text-align:center;font-size:12px">${moneyShort(sum(ds,d=>(cov[d.id]||{})[k]||0))}</td>`).join("")}<td class="r num">${moneyShort(sum(colTot)+sum(allEv,k=>sum(ds,d=>(cov[d.id]||{})[k]||0)))}</td><td></td></tr></tfoot></table></div>`;
+}
+
+let recF={q:"",y:"",b:""};
+function filteredRec(){
+  return S.receipts.items.filter(r=>{
+    if(recF.y && (r.d||"").slice(0,4)!==recF.y) return false;
+    if(recF.b && r.b!==recF.b) return false;
+    if(recF.q){ const q=recF.q.toLowerCase(); if(!(donorName(r.n).toLowerCase().includes(q)||(r.l||"").toLowerCase().includes(q))) return false; }
+    return true;
+  }).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:0);
+}
+function years(){ const s=new Set([...S.receipts.items.map(r=>(r.d||"").slice(0,4)),...S.payments.items.map(p=>(p.d||"").slice(0,4))]); return [...s].filter(Boolean).sort().reverse(); }
+function pgRec(){
+  const rs=filteredRec();
+  return topBar("Recettes",`${S.receipts.items.length} encaissements depuis la création · ${money(totRec())}`) + `
+  <div class="toolbar">
+    <input type="search" id="rq" placeholder="Rechercher (nom, période…)" value="${esc(recF.q)}">
+    <select id="ry"><option value="">Toutes les années</option>${years().map(y=>`<option ${recF.y===y?"selected":""}>${y}</option>`).join("")}</select>
+    <select id="rb"><option value="">Tous les comptes</option>${S.meta.banks.map(b=>`<option ${recF.b===b?"selected":""}>${b}</option>`).join("")}</select>
+    <span class="chip pri" style="margin-left:auto">${rs.length} lignes · ${money(sum(rs,r=>r.a))}</span>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Cotisant</th><th>Période concernée</th><th>Compte</th><th class="r">Montant</th></tr></thead><tbody>
+  ${rs.slice(0,400).map(r=>`<tr class="click" data-act="editRec" data-v="${r.id}"><td class="num">${fmtDate(r.d)}</td><td><b>${esc(donorName(r.n))}</b></td><td>${esc(r.l)||"—"}</td><td>${r.b?`<span class="chip">${esc(r.b)}</span>`:""}</td><td class="r num"><b>${money(r.a)}</b></td></tr>`).join("") || `<tr><td colspan="5" class="empty">Aucune recette ne correspond à ces filtres.</td></tr>`}
+  </tbody></table></div>${rs.length>400?`<p class="muted">400 premières lignes affichées — affinez avec les filtres ou exportez la liste complète.</p>`:""}`;
+}
+
+let payF={q:"",y:"",f:""};
+function pgPay(){
+  const ps=S.payments.items.filter(p=>{
+    if(payF.y && (p.d||"").slice(0,4)!==payF.y) return false;
+    if(payF.f && String(p.f)!==payF.f) return false;
+    if(payF.q){ const q=payF.q.toLowerCase(); const f=famById(p.f); if(!((f?f.name:"").toLowerCase().includes(q)||(p.l||"").toLowerCase().includes(q))) return false; }
+    return true;
+  }).sort((a,b)=>(a.d||"")<(b.d||"")?1:-1);
+  return topBar("Paiements",`${S.payments.items.length} versements aux familles · ${money(totPay())}`, `<button class="btn" data-act="bulk"><span class="lbl">Versements du mois</span></button>`) + `
+  <div class="toolbar">
+    <input type="search" id="pq" placeholder="Rechercher" value="${esc(payF.q)}">
+    <select id="py"><option value="">Toutes les années</option>${years().map(y=>`<option ${payF.y===y?"selected":""}>${y}</option>`).join("")}</select>
+    <select id="pf"><option value="">Toutes les familles</option>${S.families.items.map(f=>`<option value="${f.id}" ${payF.f===String(f.id)?"selected":""}>${esc(f.name)}</option>`).join("")}</select>
+    <span class="chip pri" style="margin-left:auto">${ps.length} lignes · ${money(sum(ps,p=>p.a))}</span>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Famille</th><th>Mois</th><th>Nature</th><th class="r">Montant</th></tr></thead><tbody>
+  ${ps.map(p=>{const f=famById(p.f); return `<tr class="click" data-act="editPay" data-v="${p.id}"><td class="num">${fmtDate(p.d)}</td><td><b>${esc(f?f.name:"Famille #"+p.f)}</b></td><td>${ymLabel(p.p)}</td><td>${p.k==="m"?`<span class="chip ok">Salaire mensuel</span>`:`<span class="chip warn">${esc(p.l||"Aide exceptionnelle")}</span>`}</td><td class="r num"><b>${money(p.a)}</b></td></tr>`;}).join("") || `<tr><td colspan="5" class="empty">Aucun paiement ne correspond à ces filtres.</td></tr>`}
+  </tbody></table></div>`;
+}
+
+function pgFam(){
+  const pm=payMap();
+  const fs=[...S.families.items].sort((a,b)=>(!!a.end)-(!!b.end)||a.id-b.id);
+  return topBar("Familles aidées",`${activeFams().length} familles accompagnées actuellement`, `<button class="btn" data-act="newFam"><svg><use href="#i-plus"/></svg><span class="lbl">Famille</span></button>`) + `
+  <div class="fams">${fs.map(f=>{
+    const tot=sum(S.payments.items.filter(p=>p.f===f.id),p=>p.a);
+    const months=Object.keys(pm[f.id]||{}).length;
+    const kids=(f.children||[]);
+    return `<button class="fam ${f.end?"ended":""}" data-act="fam" data-v="${f.id}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>${esc(f.name)}</h3><span class="muted">${esc(f.city||"")}</span></div>${f.end?`<span class="chip">Fin ${fmtDate(f.end).slice(3)}</span>`:`<span class="chip ok">Active</span>`}</div>
+      <div class="kids">${kids.length?kids.map(k=>`<span class="chip">${esc((k.name||"").split(" ")[0])}${age(k.born)!=null?` · ${age(k.born)} ans`:""}</span>`).join(""):`<span class="chip">${f.kids||0} enfants</span>`}</div>
+      <div class="stats"><div><b class="num">${money(f.monthly)}</b><small>par mois</small></div><div><b class="num">${moneyShort(tot)}</b><small>versés en ${months} mois</small></div></div>
+      <small class="muted">Aidée depuis le ${fmtDate(f.start)}</small>
+    </button>`;}).join("")}</div>`;
+}
+
+function pgTreso(){
+  const lr=lastReal(), theoNow=totRec()-totPay();
+  const theo=lr?theoAt(lr.d):theoNow, real=realTotal(lr), gap=lr?real-theo:null;
+  const byBank=b=>sum(S.receipts.items.filter(r=>r.b===b),r=>r.a);
+  return topBar("Trésorerie","Le théorique vient de vos saisies, le réel de vos relevés et de votre caisse.", `<button class="btn" data-act="newReal"><svg><use href="#i-plus"/></svg><span class="lbl">Solde réel</span></button>`) + `
+  <div class="grid g2">
+    <section class="panel"><h2>Rapprochement${lr?` <small>au ${fmtDate(lr.d)}</small>`:""}</h2>
+      ${lr?`<div class="recon">
+        <div class="ln"><span>Recettes enregistrées</span><b class="num">${money(sum(S.receipts.items.filter(r=>r.d<=lr.d),r=>r.a))}</b></div>
+        <div class="ln"><span>Paiements enregistrés</span><b class="num">− ${money(sum(S.payments.items.filter(p=>(p.d||"")<=lr.d),p=>p.a))}</b></div>
+        <div class="ln tot"><span><b>Trésorerie théorique</b></span><b class="num">${money(theo)}</b></div>
+        <div class="ln"><span><b>Trésorerie réelle constatée</b></span><b class="num">${money(real)}</b></div>
+        <div class="ln tot gap"><span><b>Écart</b></span><b class="num" style="color:${Math.abs(gap)<1?"var(--mint)":"var(--rose)"}">${gap>0?"+":""}${money(gap)}</b></div>
+      </div>
+      ${Math.abs(gap)<1?`<p><span class="chip ok">Caisse rapprochée</span></p>`:`<p class="muted" style="margin-bottom:0">Écart positif : plus d'argent que prévu (recette non saisie, paiement saisi mais pas sorti…). Écart négatif : l'inverse.</p>`}`
+      :`<div class="empty">Saisissez un solde réel pour lancer le rapprochement.<br><br><button class="btn pri" data-act="newReal">Saisir le solde réel</button></div>`}
+    </section>
+    <section class="panel"><h2>Encaissements par compte <small>depuis la création</small></h2>
+      <div class="list">${[...S.meta.banks,""].map(b=>{const v=b?byBank(b):sum(S.receipts.items.filter(r=>!r.b),r=>r.a); return `<div class="it"><span class="avatar">${b?esc(b.slice(0,3)):"AN"}</span><div class="grow"><div class="t">${b?esc(b==="Cash"?"Espèces":b):"Sans compte (reprise à nouveau)"}</div></div><b class="num">${money(v)}</b></div>`;}).join("")}</div>
+      <p class="muted" style="font-size:13.5px;margin-bottom:0">Trésorerie théorique à ce jour : <b class="num">${money(theoNow)}</b></p>
+    </section>
+  </div>
+  <section class="panel" style="margin-top:18px"><h2>Historique des soldes réels <small>cliquez sur une ligne pour la modifier</small></h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th>${S.meta.banks.map(b=>`<th class="r">${esc(b==="Cash"?"Espèces":b)}</th>`).join("")}<th class="r">Autre</th><th class="r">Total réel</th><th class="r">Théorique</th><th class="r">Écart</th></tr></thead><tbody>
+    ${[...S.treasury.reals].sort((a,b)=>a.d<b.d?1:-1).map(r=>{const t=realTotal(r), th=theoAt(r.d), g=t-th; return `<tr class="click" data-act="newReal" data-v="${r.id}"><td>${fmtDate(r.d)}</td>${S.meta.banks.map(b=>`<td class="r num">${moneyShort((r.lines||{})[b]||0)}</td>`).join("")}<td class="r num">${moneyShort((r.lines||{}).Autre||0)}</td><td class="r num"><b>${money(t)}</b></td><td class="r num">${money(th)}</td><td class="r num" style="color:${Math.abs(g)<1?"var(--mint)":"var(--rose)"}">${g>0?"+":""}${moneyShort(g)}</td></tr>`;}).join("") || `<tr><td colspan="8" class="empty">Aucun solde saisi.</td></tr>`}
+    </tbody></table></div>
+  </section>`;
+}
+
+function pgExport(){
+  return topBar("Exports & sauvegarde","Partagez vos tableaux en un clic, avec ou sans les noms.") + `
+  <div class="grid g2">
+    <section class="panel"><h2>Exporter vers Excel</h2>
+      <div class="field"><span>Contenu</span>
+        <div class="docs" id="exWhat">
+          ${[["suivi","Suivi des cotisations"],["rec","Recettes"],["pay","Paiements"],["fam","Familles"],["treso","Trésorerie"]].map(([k,l])=>`<label><input type="checkbox" value="${k}" ${k!=="fam"?"checked":""}>${l}</label>`).join("")}
+        </div></div>
+      <div class="row2" style="margin-top:14px">
+        <label class="field"><span>Année du suivi</span><select id="exY">${[...new Set([curYM().slice(0,4),...years()])].sort().reverse().map(y=>`<option>${y}</option>`).join("")}<option value="all">Toutes les années</option></select></label>
+        <label class="field"><span>Format</span><select id="exFmt"><option value="xlsx">Excel (.xlsx)</option><option value="csv">CSV (un tableau)</option></select></label>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+        <label class="switch"><input type="checkbox" id="anD"><span><b>Anonymiser les cotisants</b><small>Les noms deviennent « Cotisant 01 », « Cotisant 02 »… toujours dans le même ordre.</small></span></label>
+        <label class="switch"><input type="checkbox" id="anF" checked><span><b>Anonymiser les familles</b><small>« Famille A », « Famille B »… Enfants, parents et téléphones sont retirés.</small></span></label>
+      </div>
+      <div style="margin-top:18px"><button class="btn pri" id="doExport"><svg><use href="#i-share"/></svg>Exporter</button></div>
+    </section>
+    <div class="grid" style="align-content:start">
+      <section class="panel"><h2>Relevé individuel</h2>
+        <p class="muted" style="margin-top:-6px">Le détail d'un seul cotisant (ses versements et ses mois couverts), sans les autres. Idéal pour lui répondre.</p>
+        <div class="row2"><label class="field"><span>Cotisant</span><select id="indD">${S.donors.items.filter(d=>!d.anon).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join("")}</select></label>
+        <label class="field"><span>&nbsp;</span><button class="btn" id="doInd">Exporter son relevé</button></label></div>
+      </section>
+      <section class="panel"><h2>Partager l'application</h2>
+        <p class="muted" style="margin-top:-6px">Crée un fichier .html autonome, avec les données d'aujourd'hui, que n'importe qui peut ouvrir dans son navigateur.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn pri" id="cpAnon">Copie anonymisée à partager</button><button class="btn" id="cpFull">Copie complète à jour (pour moi)</button></div>
+        <p class="muted" style="font-size:13.5px;margin-bottom:0">La copie anonymisée remplace les noms, retire téléphones, parents et prénoms des enfants. La copie complète contient tout : ne la donne à personne.</p>
+      </section>
+      <section class="panel"><h2>Sauvegarde</h2>
+        <p class="muted" style="margin-top:-6px">Tes saisies sont gardées sur cet appareil. Télécharge une sauvegarde régulièrement : si tu vides le navigateur ou changes d'ordinateur, c'est elle qui te sauve.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="doBackup">Télécharger une sauvegarde</button>
+        <label class="btn" style="cursor:pointer">Restaurer une sauvegarde<input type="file" id="restore" hidden></label></div>
+      </section>
+      <section class="panel"><h2>Réglages</h2>
+        <label class="field"><span>Nom de la caisse</span><input type="text" id="setName" value="${esc(S.meta.name)}"></label>
+      </section>
+    </div>
+  </div>`;
+}
+
+function renderEmpty(){
+  S = null;
+  $("#main").innerHTML = `<div class="loading"><svg viewBox="0 0 24 24"><use href="#star"/></svg><div style="max-width:420px">
+    <h2 style="font-family:var(--display);margin:0 0 8px;color:var(--ink);font-size:26px">Bienvenue sur Sanad</h2>
+    <p>Pour retrouver tout ton historique, charge le fichier de sauvegarde (.json).</p>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:stretch;margin-top:18px">
+      <label class="btn pri" style="cursor:pointer;justify-content:center;padding:13px">Charger ma sauvegarde<input type="file" id="restore0" hidden></label>
+      <button class="btn ghost" id="startBlank" style="justify-content:center">Commencer avec une caisse vide</button>
+    </div>
+    <p style="font-size:13px;margin-top:18px">Les données restent sur cet appareil. Rien n'est envoyé sur internet.</p></div></div>`;
+  $("#startBlank").onclick=()=>{ if(!confirmBox("Démarrer sans historique ?")) return; S=blank(); S.meta.dataset="main"; touch(...DOCS); route(); };
+  $("#restore0").onchange=e=>restoreFile(e.target.files[0]);
+  setSave("ok","Prêt");
+}
+/* ============ Page bindings ============ */
+function bindPage(id){
+  if(id==="cotisations"){
+    $$(".seg [data-y]").forEach(b=>b.onclick=()=>{ trackYear+=+b.dataset.y; route(); });
+    $$("#trkAct button").forEach(b=>b.onclick=()=>{ trackActive=b.dataset.a==="1"; route(); });
+    $$("#trkView button").forEach(b=>b.onclick=()=>{ trackView=b.dataset.w; route(); });
+    $("#trkSort").onchange=e=>{ trackSort=e.target.value; route(); };
+    const q=$("#trkQ"); q.oninput=()=>{ trackQ=q.value; const pos=q.selectionStart; route(); const n=$("#trkQ"); n.focus(); n.setSelectionRange(pos,pos); };
+  }
+  if(id==="recettes"){
+    const q=$("#rq"); q.oninput=()=>{ recF.q=q.value; const p=q.selectionStart; route(); const n=$("#rq"); n.focus(); n.setSelectionRange(p,p); };
+    $("#ry").onchange=e=>{recF.y=e.target.value;route();}; $("#rb").onchange=e=>{recF.b=e.target.value;route();};
+  }
+  if(id==="paiements"){
+    const q=$("#pq"); q.oninput=()=>{ payF.q=q.value; const p=q.selectionStart; route(); const n=$("#pq"); n.focus(); n.setSelectionRange(p,p); };
+    $("#py").onchange=e=>{payF.y=e.target.value;route();}; $("#pf").onchange=e=>{payF.f=e.target.value;route();};
+  }
+  if(id==="exports"){
+    $("#doExport").onclick=doExport; $("#cpAnon").onclick=()=>saveCopy(true); $("#cpFull").onclick=()=>saveCopy(false); $("#doInd").onclick=doIndividual; $("#doBackup").onclick=doBackup;
+    $("#restore").onchange=e=>restoreFile(e.target.files[0]);
+    $("#setName").onchange=e=>{ S.meta.name=e.target.value.trim()||"Sanad"; touch("meta"); route(); toast("Nom enregistré"); };
+  }
+}
+
+/* ============ Modal infra ============ */
+function openModal(html, wide){ const m=$("#modal"); m.className="modal"+(wide?" wide":""); m.innerHTML=html; $("#scrim").classList.add("open"); setTimeout(()=>{ const f=m.querySelector("[autofocus]"); if(f) f.focus(); },30); }
+function closeModal(){ $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; }
+$("#scrim").addEventListener("mousedown", e=>{ if(e.target.id==="scrim") closeModal(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("#scrim").classList.contains("open")) closeModal(); });
+const mHead = t => `<div class="mh"><h3>${t}</h3><button class="x" data-act="close" aria-label="Fermer"><svg width="20" height="20"><use href="#i-x"/></svg></button></div>`;
+function confirmBox(msg){ return window.confirm(msg); }
+
+/* ============ Month picker ============ */
+function monthPicker(state, opts){
+  // state: {year, sel:Set}, opts: {status(ym)->{dis,label,cls}}
+  const y=state.year;
+  return `<div class="yearnav"><button type="button" class="btn sm" data-yn="-1" aria-label="Année précédente"><svg><use href="#i-l"/></svg></button><b>${y}</b><button type="button" class="btn sm" data-yn="1" aria-label="Année suivante"><svg><use href="#i-r"/></svg></button></div>
+  <div class="months">${[...Array(12)].map((_,i)=>{ const ym=y+"-"+String(i+1).padStart(2,"0"); const st=opts.status(ym); const sel=state.sel.has(ym);
+    return `<button type="button" class="mt ${sel?"sel":""} ${st.cls||""}" data-ym="${ym}" ${st.dis?"disabled":""} aria-pressed="${sel}"><b>${cap(MSHORT[i])}</b><small>${st.label||""}</small>${st.dis?`<svg class="star"><use href="#star"/></svg>`:""}</button>`; }).join("")}</div>`;
+}
+
+/* ============ Receipt modal ============ */
+function openReceipt(id, presetDonor){
+  const ed = id ? S.receipts.items.find(r=>r.id===id) : null;
+  const isHist = ed && !ed.al;
+  const st = {
+    n: ed ? ed.n : (presetDonor ?? null),
+    kind: ed ? (ed.al && Object.keys(ed.al).some(k=>k.startsWith("EVT")) ? "x" : (isHist?"h":"m")) : "m",
+    d: ed ? ed.d : today(), b: ed ? ed.b : "CIH", a: ed ? ed.a : "", l: ed ? ed.l : "", manual: !!ed,
+    sel: new Set(ed && ed.al ? Object.keys(ed.al).filter(k=>!k.startsWith("EVT")) : []), year: +curYM().slice(0,4),
+    ev: ed && ed.al ? (Object.keys(ed.al).find(k=>k.startsWith("EVT"))||"").slice(4) : ""
+  };
+  const cov = coverage(ed?ed.id:null);
+  const evSugg=["Aïd El Kébir "+curYM().slice(0,4),"Ramadan "+curYM().slice(0,4),"Rentrée scolaire "+curYM().slice(0,4),"Don exceptionnel"];
+  function preset(){
+    const d=donorById(st.n); if(!d) return;
+    const c=cov[d.id]||{}; const b=donorBounds(d,cov);
+    let ym = b.last ? ymAdd(b.last,1) : curYM();
+    // fill earliest late month in window first
+    const late=lateMonths(d,cov); if(late.length) ym=late[0];
+    st.year=+ym.slice(0,4); st.sel=new Set([ym]);
+    if(!st.manual) st.a = d.monthly || "";
+  }
+  if(!ed && st.n!=null) preset();
+  if(ed && st.sel.size) st.year=+[...st.sel].sort()[0].slice(0,4);
+  function status(ym){
+    const d=donorById(st.n); if(!d) return {};
+    const v=(cov[d.id]||{})[ym]||0;
+    if(v>0 && (!d.monthly || v>=d.monthly)) return {dis:true,label:moneyShort(v)+" DH"};
+    if(v>0) return {cls:"part",label:"reste "+moneyShort(d.monthly-v)};
+    const b=donorBounds(d,cov); if(cellStatus(d,ym,cov,b)==="late") return {cls:"late",label:"en retard"};
+    return {label:ym===curYM()?"ce mois":""};
+  }
+  function allocation(){
+    const d=donorById(st.n), amt=+st.a||0, al={};
+    if(st.kind==="x"){ if(amt) al["EVT:"+(st.ev||"Don exceptionnel")]=amt; return al; }
+    const ms=[...st.sel].sort(); if(!ms.length) return al;
+    let left=amt;
+    ms.forEach((m,i)=>{
+      const have=(cov[d?.id]||{})[m]||0, need=d&&d.monthly?Math.max(0,d.monthly-have):Math.round(amt/ms.length);
+      let put = i===ms.length-1 ? left : Math.min(left, need);
+      put=Math.round(put*100)/100; if(put>0){ al[m]=put; left-=put; }
+    });
+    return al;
+  }
+  function render(){
+    const d=donorById(st.n);
+    const opts=(arr)=>arr.map(x=>`<option value="${x.id}" ${st.n===x.id?"selected":""}>${esc(x.name)}${x.anon?"":" — "+moneyShort(x.monthly)+" DH/mois"}</option>`).join("");
+    const al=allocation();
+    const alTxt = Object.keys(al).length ? "Réparti ainsi : "+Object.entries(al).map(([k,v])=>`<b>${k.startsWith("EVT")?esc(k.slice(4)):ymShort(k)}</b> ${moneyShort(v)}`).join(" · ") : (st.kind==="m"?"Sélectionnez au moins un mois.":"");
+    openModal(mHead(ed?"Modifier la recette":"Encaisser une cotisation") + `<div class="mb">
+      <div class="row2">
+        <label class="field"><span>Cotisant</span><select id="fD" ${!ed?"autofocus":""}><option value="">Choisir…</option><optgroup label="Actifs">${opts(S.donors.items.filter(x=>x.active&&!x.anon))}</optgroup><optgroup label="Autres">${opts(S.donors.items.filter(x=>!x.active||x.anon))}</optgroup>${ed&&ed.n==null?`<option value="" selected>Reprise à nouveau</option>`:""}</select></label>
+        <label class="field"><span>Date de réception</span><input type="date" id="fDt" value="${st.d}"></label>
+      </div>
+      ${isHist?`<div class="banner">Recette reprise de l'historique Excel : les mois couverts sont déjà comptés dans le suivi. Vous pouvez corriger la date, le montant, le compte ou le libellé.</div>`:
+      `<div><div class="seg" id="fK"><button type="button" class="${st.kind==="m"?"on":""}" data-k="m">Cotisation mensuelle</button><button type="button" class="${st.kind==="x"?"on":""}" data-k="x">Don ponctuel</button></div></div>`}
+      ${!isHist && st.kind==="m" ? (d ? `<div>${monthPicker(st,{status})}<div class="split">${alTxt}</div></div>` : `<div class="empty" style="padding:20px">Choisissez d'abord le cotisant : ses mois déjà payés seront grisés.</div>`) : ""}
+      ${!isHist && st.kind==="x" ? `<label class="field"><span>Motif</span><input type="text" id="fEv" list="evl" value="${esc(st.ev)}" placeholder="Ex. Aïd El Kébir ${curYM().slice(0,4)}"><datalist id="evl">${evSugg.map(s=>`<option value="${esc(s)}">`).join("")}</datalist></label>`:""}
+      <div class="row2">
+        <label class="field"><span>Montant (DH)</span><input type="number" id="fA" class="amount-in num" min="0" step="1" value="${st.a}"></label>
+        <div class="field"><span>Compte</span><div class="seg" id="fB">${S.meta.banks.map(b=>`<button type="button" class="${st.b===b?"on":""}" data-b="${b}">${b==="Cash"?"Espèces":b}</button>`).join("")}</div></div>
+      </div>
+      ${isHist?`<label class="field"><span>Période / libellé</span><input type="text" id="fL" value="${esc(st.l)}"></label>`:
+       `<label class="field"><span>Note (facultatif)</span><input type="text" id="fL" value="${esc(st.kind==="m"&&st.l===rangeLabel([...st.sel])?"":st.l)}" placeholder="Laissez vide pour un libellé automatique"></label>`}
+    </div><div class="mf">${ed?`<button class="btn danger" id="fDel">Supprimer</button>`:"<span></span>"}<div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn in" id="fSave">${ed?"Enregistrer":"Encaisser"}</button></div></div>`, true);
+    const D=$("#fD"); D.onchange=()=>{ st.n=D.value===""?null:+D.value; st.manual=false; preset(); render(); };
+    $("#fDt").onchange=e=>st.d=e.target.value;
+    $$("#fK button").forEach(b=>b.onclick=()=>{ st.kind=b.dataset.k; render(); });
+    $$("#fB button").forEach(b=>b.onclick=()=>{ st.b=b.dataset.b; $$("#fB button").forEach(x=>x.classList.toggle("on",x===b)); });
+    const A=$("#fA"); A.oninput=()=>{ st.a=A.value; st.manual=true; const s=$(".split"); if(s){ const al=allocation(); s.innerHTML=Object.keys(al).length?"Réparti ainsi : "+Object.entries(al).map(([k,v])=>`<b>${ymShort(k)}</b> ${moneyShort(v)}`).join(" · "):"Sélectionnez au moins un mois."; } };
+    const L=$("#fL"); L.oninput=()=>st.l=L.value;
+    const E=$("#fEv"); if(E) E.oninput=()=>st.ev=E.value;
+    $$("[data-yn]").forEach(b=>b.onclick=()=>{ st.year+=+b.dataset.yn; render(); });
+    $$(".mt[data-ym]").forEach(b=>b.onclick=()=>{
+      const ym=b.dataset.ym; st.sel.has(ym)?st.sel.delete(ym):st.sel.add(ym);
+      if(!st.manual && d) st.a = sum([...st.sel], m=>{ const have=(cov[d.id]||{})[m]||0; return d.monthly?Math.max(0,d.monthly-have):0; }) || st.a;
+      render();
+    });
+    if(ed) $("#fDel").onclick=()=>{ if(confirmBox("Supprimer cette recette de "+money(ed.a)+" ?")){ S.receipts.items=S.receipts.items.filter(r=>r.id!==ed.id); touch("receipts"); closeModal(); route(); toast("Recette supprimée"); } };
+    $("#fSave").onclick=()=>{
+      const amt=+st.a;
+      if(!isHist && st.n==null){ toast("Choisissez un cotisant"); return; }
+      if(!(amt>0)){ toast("Indiquez un montant"); return; }
+      if(!st.d){ toast("Indiquez la date"); return; }
+      if(!isHist && st.kind==="m" && !st.sel.size){ toast("Sélectionnez au moins un mois"); return; }
+      if(isHist){ Object.assign(ed,{d:st.d,a:amt,b:st.b,l:st.l, n: st.n}); }
+      else {
+        const al=allocation();
+        const label = st.l && st.l.trim() ? st.l.trim() : (st.kind==="x" ? (st.ev||"Don exceptionnel") : rangeLabel(Object.keys(al)));
+        const rec={id:ed?ed.id:uid("r"), d:st.d, n:st.n, a:amt, b:st.b, l:label, al};
+        if(ed) Object.assign(ed, rec); else S.receipts.items.push(rec);
+      }
+      touch("receipts"); closeModal(); route(); toast(ed?"Recette modifiée":"Encaissé : "+money(amt)+" — "+donorName(st.n));
+    };
+  }
+  render();
+}
+
+/* ============ Payment modal ============ */
+function openPayment(id, presetFam){
+  const ed = id ? S.payments.items.find(p=>p.id===id) : null;
+  const pm = payMap(ed?ed.id:null);
+  const fams=S.families.items;
+  const st = { f: ed?ed.f:(presetFam ?? (activeFams()[0]||{}).id ?? null), k: ed?ed.k:"m", d: ed?ed.d:today(), a: ed?ed.a:"", l: ed?ed.l:"", sel:new Set(ed?[ed.p]:[]), year:+curYM().slice(0,4), manual:!!ed };
+  function preset(){
+    const f=famById(st.f); if(!f) return;
+    const done=Object.keys(pm[f.id]||{}).filter(k=>(pm[f.id][k].m||0)>0).sort();
+    let ym=curYM(); if(st.k==="m"){ ym = done.length ? ymAdd(done[done.length-1],1) : (f.start||today()).slice(0,7); if(ym>ymAdd(curYM(),1)) ym=curYM(); }
+    st.year=+ym.slice(0,4); st.sel=new Set([ym]);
+    if(!st.manual) st.a = st.k==="m" ? f.monthly : "";
+  }
+  if(!ed) preset(); else st.year=+ed.p.slice(0,4);
+  function status(ym){
+    const f=famById(st.f); if(!f) return {};
+    const c=(pm[f.id]||{})[ym];
+    if(st.k==="m" && c && c.m>0) return {dis:true,label:moneyShort(c.m)+" DH"};
+    if(c && (c.m||c.x)) return {label:moneyShort(c.m+c.x)+" versé"};
+    if(f.start && ym < f.start.slice(0,7)) return {label:"avant"};
+    return {label:ym===curYM()?"ce mois":""};
+  }
+  function render(){
+    const f=famById(st.f);
+    const n=st.sel.size, per=n? (+st.a||0)/(st.k==="m"&&!ed?1:1):0;
+    openModal(mHead(ed?"Modifier le paiement":"Verser à une famille") + `<div class="mb">
+      <div class="row2">
+        <label class="field"><span>Famille</span><select id="gF" ${!ed?"autofocus":""}>${fams.map(x=>`<option value="${x.id}" ${st.f===x.id?"selected":""}>${esc(x.name)}${x.end?" (aide terminée)":""}</option>`).join("")}</select></label>
+        <label class="field"><span>Date du versement</span><input type="date" id="gDt" value="${st.d||""}"></label>
+      </div>
+      <div><div class="seg" id="gK"><button type="button" class="${st.k==="m"?"on":""}" data-k="m">Salaire mensuel</button><button type="button" class="${st.k==="x"?"on":""}" data-k="x">Aide exceptionnelle</button></div></div>
+      ${f?`<div>${monthPicker(st,{status})}<div class="split">${st.k==="m"&&!ed?(n>1?`${n} versements de ${money(+st.a||0)} seront créés (un par mois).`:""):"Une aide exceptionnelle est rattachée à un seul mois."}</div></div>`:""}
+      ${st.k==="x"?`<label class="field"><span>Motif</span><input type="text" id="gL" list="gl" value="${esc(st.l)}" placeholder="Ex. Rentrée scolaire"><datalist id="gl"><option value="Aïd El Kébir"><option value="Rentrée scolaire"><option value="Ramadan"><option value="Exceptionnel"></datalist></label>`:""}
+      <label class="field"><span>Montant ${st.k==="m"?"par mois ":""}(DH)</span><input type="number" id="gA" class="amount-in num" min="0" step="1" value="${st.a}"></label>
+    </div><div class="mf">${ed?`<button class="btn danger" id="gDel">Supprimer</button>`:"<span></span>"}<div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn pri" id="gSave">${ed?"Enregistrer":"Enregistrer le versement"}</button></div></div>`, true);
+    $("#gF").onchange=e=>{ st.f=+e.target.value; st.manual=false; preset(); render(); };
+    $("#gDt").onchange=e=>st.d=e.target.value;
+    $$("#gK button").forEach(b=>b.onclick=()=>{ st.k=b.dataset.k; if(!ed){ st.manual=false; preset(); } render(); });
+    $("#gA").oninput=e=>{ st.a=e.target.value; st.manual=true; };
+    const L=$("#gL"); if(L) L.oninput=()=>st.l=L.value;
+    $$("[data-yn]").forEach(b=>b.onclick=()=>{ st.year+=+b.dataset.yn; render(); });
+    $$(".mt[data-ym]").forEach(b=>b.onclick=()=>{
+      const ym=b.dataset.ym;
+      if(st.k==="x" || ed){ st.sel=new Set([ym]); }
+      else { st.sel.has(ym)?st.sel.delete(ym):st.sel.add(ym); }
+      render();
+    });
+    if(ed) $("#gDel").onclick=()=>{ if(confirmBox("Supprimer ce paiement de "+money(ed.a)+" ?")){ S.payments.items=S.payments.items.filter(p=>p.id!==ed.id); touch("payments"); closeModal(); route(); toast("Paiement supprimé"); } };
+    $("#gSave").onclick=()=>{
+      const amt=+st.a;
+      if(st.f==null){ toast("Choisissez une famille"); return; }
+      if(!(amt>0)){ toast("Indiquez un montant"); return; }
+      if(!st.sel.size){ toast("Sélectionnez le mois concerné"); return; }
+      if(!st.d){ toast("Indiquez la date"); return; }
+      const lab = st.k==="x" ? (st.l.trim()||"Aide exceptionnelle") : "";
+      if(ed){ Object.assign(ed,{f:st.f,k:st.k,d:st.d,a:amt,l:lab,p:[...st.sel][0]}); }
+      else [...st.sel].sort().forEach(ym=>S.payments.items.push({id:uid("p"),f:st.f,p:ym,d:st.d,a:amt,k:st.k,l:lab}));
+      touch("payments"); closeModal(); route(); toast(ed?"Paiement modifié":"Versement enregistré");
+    };
+  }
+  render();
+}
+
+/* ============ Bulk monthly payments ============ */
+function openBulk(){
+  const st={ym:curYM(), d:today()};
+  function render(){
+    const pm=payMap();
+    const fams=activeFams().filter(f=>!(f.start && f.start.slice(0,7)>st.ym));
+    openModal(mHead("Versements du mois") + `<div class="mb">
+      <div class="row2"><label class="field"><span>Mois concerné</span><input type="month" id="bY" value="${st.ym}"></label><label class="field"><span>Date des virements</span><input type="date" id="bD" value="${st.d}"></label></div>
+      <div class="list">${fams.map(f=>{ const done=((pm[f.id]||{})[st.ym]||{}).m>0; return `<div class="it"><input type="checkbox" class="bC" data-f="${f.id}" ${done?"disabled":"checked"} style="width:20px;height:20px;accent-color:var(--primary)"><div class="grow"><div class="t">${esc(f.name)}</div><small class="muted">${done?"Déjà versé pour ce mois":esc(f.city||"")}</small></div>${done?`<span class="chip ok">Fait</span>`:`<input type="number" class="bA num" data-f="${f.id}" value="${f.monthly}" style="width:120px;text-align:right">`}</div>`; }).join("") || `<div class="empty">Aucune famille active.</div>`}</div>
+    </div><div class="mf"><span class="muted" id="bTot"></span><div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn pri" id="bSave">Enregistrer les versements</button></div></div>`);
+    const upd=()=>{ const t=sum($$(".bC").filter(c=>c.checked&&!c.disabled),c=>+($(`.bA[data-f="${c.dataset.f}"]`)||{}).value||0); $("#bTot").textContent="Total : "+money(t); };
+    $$(".bC,.bA").forEach(x=>x.oninput=upd); upd();
+    $("#bY").onchange=e=>{ st.ym=e.target.value||curYM(); render(); };
+    $("#bD").onchange=e=>st.d=e.target.value;
+    $("#bSave").onclick=()=>{
+      let n=0; $$(".bC").filter(c=>c.checked&&!c.disabled).forEach(c=>{ const a=+$(`.bA[data-f="${c.dataset.f}"]`).value; if(a>0){ S.payments.items.push({id:uid("p"),f:+c.dataset.f,p:st.ym,d:st.d,a,k:"m",l:""}); n++; } });
+      if(!n){ toast("Aucun versement sélectionné"); return; }
+      touch("payments"); closeModal(); route(); toast(n+" versement"+(n>1?"s":"")+" enregistré"+(n>1?"s":""));
+    };
+  }
+  render();
+}
+
+/* ============ Donor modal ============ */
+function openDonor(id){
+  const ed = id!=null ? donorById(id) : null;
+  const d = ed ? {...ed} : {id: Math.max(0,...S.donors.items.map(x=>x.id))+1, name:"", monthly:200, active:true, phone:"", note:""};
+  const recs = ed ? S.receipts.items.filter(r=>r.n===ed.id).sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.id>a.id?1:-1)) : [];
+  const cov=coverage(); const late=ed?lateMonths(ed,cov):[];
+  const bnd=ed?donorBounds(ed,cov):{}; const covTot=ed?sum(Object.values(cov[ed.id]||{})):0; const recTot=sum(recs,r=>r.a);
+  openModal(mHead(ed?esc(ed.name):"Nouveau cotisant") + `<div class="mb">
+    <div class="row2"><label class="field"><span>Nom</span><input type="text" id="dN" value="${esc(d.name)}" ${!ed?"autofocus":""}></label>
+    <label class="field"><span>Cotisation mensuelle prévue (DH)</span><input type="number" id="dM" value="${d.monthly}" ${d.anon?"disabled":""}></label></div>
+    <div class="row2"><label class="field"><span>Téléphone</span><input type="tel" id="dP" value="${esc(d.phone||"")}"></label>
+    <label class="field"><span>Statut</span><select id="dA"><option value="1" ${d.active?"selected":""}>Actif</option><option value="0" ${!d.active?"selected":""}>Inactif (a arrêté)</option></select></label></div>
+    <label class="field"><span>Note</span><textarea id="dT">${esc(d.note||"")}</textarea></label>
+    ${ed?`<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="chip pri">Dernier versement : ${recs[0]?fmtDate(recs[0].d)+" ("+money(recs[0].a)+")":"—"}</span>
+      ${bnd.last?`<span class="chip ${bnd.last>=curYM()?"ok":"warn"}">Couvert jusqu'à ${ymLabel(bnd.last)}</span>`:""}
+      ${late.length?`<span class="chip bad">${late.length} mois en retard : ${late.map(ymShort).join(", ")}</span>`:`<span class="chip ok">À jour</span>`}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip">Cotisant depuis ${bnd.first?ymLabel(bnd.first):"—"}</span><span class="chip">Total cotisé : ${money(covTot)}</span>${covTot-recTot>0.5?`<span class="chip">dont ${money(covTot-recTot)} reçus avant février 2022</span>`:""}</div>
+    <div class="sec-title">Tous ses versements <span class="muted" style="font-weight:500;font-size:13px">(${recs.length}, du plus récent au plus ancien)</span></div>
+    <div class="tbl-wrap" style="max-height:300px;overflow:auto"><table><thead><tr><th>Reçu le</th><th>Période concernée</th><th>Compte</th><th class="r">Montant</th></tr></thead><tbody>${recs.map(r=>`<tr><td class="num">${fmtDate(r.d)}</td><td>${esc(r.l)}</td><td>${esc(r.b||"")}</td><td class="r num"><b>${money(r.a)}</b></td></tr>`).join("")||`<tr><td colspan="4" class="empty">Aucun versement enregistré.</td></tr>`}</tbody></table></div>`:""}
+  </div><div class="mf">${ed&&!ed.anon?`<button class="btn" data-act="newRec" data-v="${ed.id}">Encaisser pour lui</button>`:"<span></span>"}<div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn pri" id="dSave">Enregistrer</button></div></div>`, true);
+  $("#dSave").onclick=()=>{
+    const name=$("#dN").value.trim(); if(!name){ toast("Indiquez un nom"); return; }
+    const o={...d, name, monthly:+$("#dM").value||0, phone:$("#dP").value.trim(), active:$("#dA").value==="1", note:$("#dT").value};
+    if(ed) Object.assign(ed,o); else { o.start=curYM(); S.donors.items.splice(S.donors.items.findIndex(x=>x.anon)>=0?S.donors.items.findIndex(x=>x.anon):S.donors.items.length,0,o); }
+    touch("donors"); closeModal(); route(); toast(ed?"Cotisant mis à jour":"Cotisant ajouté");
+  };
+}
+
+/* ============ Family modal ============ */
+function openFamily(id){
+  const ed = id!=null ? famById(id) : null;
+  const f = JSON.parse(JSON.stringify(ed || {id:Math.max(0,...S.families.items.map(x=>x.id))+1,name:"",city:"",kids:0,start:today(),end:null,monthly:2000,father:{},mother:{},children:[],phone:"",note:"",docs:{}}));
+  f.father=f.father||{}; f.mother=f.mother||{}; f.children=f.children||[]; f.docs=f.docs||{};
+  const pays=ed?S.payments.items.filter(p=>p.f===ed.id).sort((a,b)=>(a.d||"")<(b.d||"")?1:-1):[];
+  function kidRows(){ return f.children.map((k,i)=>`<div class="kid-row"><input type="text" data-k="${i}" data-f="name" value="${esc(k.name)}" placeholder="Prénom et nom"><input type="date" data-k="${i}" data-f="born" value="${k.born||""}"><select data-k="${i}" data-f="sex"><option value="G" ${k.sex==="G"?"selected":""}>Garçon</option><option value="F" ${k.sex==="F"?"selected":""}>Fille</option></select><button type="button" class="x" data-rm="${i}" aria-label="Retirer"><svg width="18" height="18"><use href="#i-x"/></svg></button></div>`).join(""); }
+  function render(){
+    openModal(mHead(ed?esc(ed.name):"Nouvelle famille") + `<div class="mb">
+      <div class="row3"><label class="field"><span>Nom de la famille / de la mère</span><input type="text" id="hN" value="${esc(f.name)}"></label><label class="field"><span>Ville</span><input type="text" id="hC" value="${esc(f.city||"")}"></label><label class="field"><span>Téléphone</span><input type="tel" id="hP" value="${esc(f.phone||"")}"></label></div>
+      <div class="row3"><label class="field"><span>Aidée depuis le</span><input type="date" id="hS" value="${f.start||""}"></label><label class="field"><span>Fin de l'aide</span><input type="date" id="hE" value="${f.end||""}"></label><label class="field"><span>Salaire mensuel (DH)</span><input type="number" id="hM" value="${f.monthly}"></label></div>
+      <div class="sec-title">Parents</div>
+      <div class="row3"><label class="field"><span>Mère</span><input type="text" id="mN" value="${esc(f.mother.name||"")}"></label><label class="field"><span>Née le</span><input type="date" id="mB" value="${f.mother.born||""}"></label><span></span></div>
+      <div class="row3"><label class="field"><span>Père (défunt)</span><input type="text" id="pN" value="${esc(f.father.name||"")}"></label><label class="field"><span>Né le</span><input type="date" id="pB" value="${f.father.born||""}"></label><label class="field"><span>Décédé le</span><input type="date" id="pD" value="${f.father.died||""}"></label></div>
+      <div class="sec-title">Enfants ${f.children.length?`<span class="muted" style="font-weight:500;font-size:13px">(${f.children.map(k=>age(k.born)!=null?age(k.born)+" ans":"?").join(", ")})</span>`:""}</div>
+      <div id="kids" style="display:flex;flex-direction:column;gap:8px">${kidRows()}</div>
+      <div><button type="button" class="btn sm" id="addKid"><svg><use href="#i-plus"/></svg>Ajouter un enfant</button></div>
+      <div class="sec-title">Dossier</div>
+      <div class="docs">${(S.meta.docsList||[]).map(dn=>`<label><input type="checkbox" data-doc="${esc(dn)}" ${f.docs[dn]?"checked":""}>${esc(dn)}</label>`).join("")}</div>
+      <label class="field"><span>Notes</span><textarea id="hT">${esc(f.note||"")}</textarea></label>
+      ${ed?`<div class="sec-title">Versements reçus <span class="muted" style="font-weight:500;font-size:13px">— ${money(sum(pays,p=>p.a))} au total</span></div>
+      <div class="tbl-wrap" style="max-height:240px;overflow:auto"><table><tbody>${pays.map(p=>`<tr><td class="num">${fmtDate(p.d)}</td><td>${ymLabel(p.p)}</td><td>${p.k==="m"?"Salaire":esc(p.l)}</td><td class="r num"><b>${money(p.a)}</b></td></tr>`).join("")||`<tr><td class="empty">Aucun versement.</td></tr>`}</tbody></table></div>`:""}
+    </div><div class="mf">${ed?`<button class="btn" data-act="newPay" data-v="${ed.id}">Verser</button>`:"<span></span>"}<div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn pri" id="hSave">Enregistrer</button></div></div>`, true);
+    const grab=()=>{
+      f.name=$("#hN").value.trim(); f.city=$("#hC").value.trim(); f.phone=$("#hP").value.trim(); f.start=$("#hS").value||null; f.end=$("#hE").value||null; f.monthly=+$("#hM").value||0;
+      f.mother={...f.mother,name:$("#mN").value.trim(),born:$("#mB").value||null}; f.father={...f.father,name:$("#pN").value.trim(),born:$("#pB").value||null,died:$("#pD").value||null};
+      $$("#kids [data-k]").forEach(el=>{ f.children[+el.dataset.k][el.dataset.f]=el.value; });
+      $$("[data-doc]").forEach(c=>f.docs[c.dataset.doc]=c.checked); f.note=$("#hT").value;
+    };
+    $("#addKid").onclick=()=>{ grab(); f.children.push({name:"",born:"",sex:"G"}); render(); };
+    $$("[data-rm]").forEach(b=>b.onclick=()=>{ grab(); f.children.splice(+b.dataset.rm,1); render(); });
+    $("#hSave").onclick=()=>{
+      grab(); if(!f.name){ toast("Indiquez le nom de la famille"); return; }
+      f.kids=f.children.length||f.kids;
+      if(ed) Object.assign(ed,f); else S.families.items.push(f);
+      touch("families"); closeModal(); route(); toast(ed?"Fiche enregistrée":"Famille ajoutée");
+    };
+  }
+  render();
+}
+
+/* ============ Treasury modals ============ */
+function openReal(id){
+  const ed = id ? S.treasury.reals.find(r=>r.id===id) : null;
+  const r = ed ? JSON.parse(JSON.stringify(ed)) : {id:uid("t"), d:today(), lines:{}, note:""};
+  const keys=[...S.meta.banks,"Autre"];
+  openModal(mHead(ed?"Modifier le solde réel":"Saisir le solde réel") + `<div class="mb">
+    <label class="field"><span>Date du relevé / du comptage</span><input type="date" id="rD" value="${r.d}"></label>
+    <div class="row2">${keys.map(k=>`<label class="field"><span>${k==="Cash"?"Espèces":k==="Autre"?"Autre / non détaillé":"Compte "+k}</span><input type="number" step="0.01" class="rL num" data-k="${k}" value="${(r.lines||{})[k]||""}"></label>`).join("")}</div>
+    <div class="kpi"><span class="muted">Total réel</span><div class="v num" id="rT"></div><span class="muted" id="rG"></span></div>
+    <label class="field"><span>Note</span><input type="text" id="rN" value="${esc(r.note||"")}"></label>
+  </div><div class="mf">${ed?`<button class="btn danger" id="rDel">Supprimer</button>`:"<span></span>"}<div style="display:flex;gap:10px"><button class="btn" data-act="close">Annuler</button><button class="btn pri" id="rSave">Enregistrer</button></div></div>`);
+  const upd=()=>{ const t=sum($$(".rL"),i=>+i.value||0), th=theoAt($("#rD").value); $("#rT").textContent=money(t); const g=t-th; $("#rG").innerHTML=`Théorique à cette date : ${money(th)} · écart <b style="color:${Math.abs(g)<1?"var(--mint)":"var(--rose)"}">${g>0?"+":""}${money(g)}</b>`; };
+  $$(".rL").forEach(i=>i.oninput=upd); $("#rD").onchange=upd; upd();
+  if(ed) $("#rDel").onclick=()=>{ if(confirmBox("Supprimer ce solde ?")){ S.treasury.reals=S.treasury.reals.filter(x=>x.id!==ed.id); touch("treasury"); closeModal(); route(); } };
+  $("#rSave").onclick=()=>{ r.d=$("#rD").value||today(); r.lines={}; $$(".rL").forEach(i=>{ if(+i.value) r.lines[i.dataset.k]=+i.value; }); r.note=$("#rN").value; if(ed) Object.assign(ed,r); else S.treasury.reals.push(r); touch("treasury"); closeModal(); route(); toast("Solde réel enregistré"); };
+}
+window.openReal=openReal;
+/* ============ Exports ============ */
+function anonMaps(){
+  const dm={}, fm={};
+  S.donors.items.filter(d=>!d.anon).sort((a,b)=>a.id-b.id).forEach((d,i)=>dm[d.id]="Cotisant "+String(i+1).padStart(2,"0"));
+  [...S.families.items].sort((a,b)=>a.id-b.id).forEach((f,i)=>fm[f.id]="Famille "+String.fromCharCode(65+i));
+  return {dm,fm};
+}
+function scrubber(anD, anF){
+  const {dm,fm}=anonMaps(); const pairs=[];
+  const add=(name,rep)=>{ (name||"").replace(/\(.*?\)/g,"").split(/[\s\/]+/).filter(w=>w.length>=3 && !/^(dr|el|ben|al)$/i.test(w)).forEach(w=>pairs.push([w,rep])); };
+  if(anD) S.donors.items.forEach(d=>{ if(!d.anon) add(d.name, dm[d.id]); });
+  if(anF) S.families.items.forEach(f=>{ add(f.name, fm[f.id]); add(f.mother&&f.mother.name, fm[f.id]); (f.children||[]).forEach(k=>add(k.name, fm[f.id])); });
+  pairs.sort((a,b)=>b[0].length-a[0].length);
+  return txt => { let t=String(txt||""); pairs.forEach(([w,r])=>{ t=t.replace(new RegExp("\\b"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi"), r); }); return t; };
+}
+function buildSheets(what, year, anD, anF){
+  const {dm,fm}=anonMaps(), scrub=scrubber(anD,anF);
+  const dN = n => n==null ? "Reprise à nouveau" : (anD && !(donorById(n)||{}).anon ? dm[n] : donorName(n));
+  const fN = id => anF ? fm[id] : ((famById(id)||{}).name || "Famille #"+id);
+  const sheets=[];
+  if(what.includes("suivi")){
+    const cov=coverage();
+    let months=[];
+    if(year==="all"){ const all=Object.values(cov).flatMap(c=>Object.keys(c).filter(k=>!k.startsWith("EVT"))).sort(); if(all.length){ let m=all[0]; while(m<=all[all.length-1]){ months.push(m); m=ymAdd(m,1);} } }
+    else months=[...Array(12)].map((_,i)=>year+"-"+String(i+1).padStart(2,"0"));
+    const evs=[...new Set(Object.values(cov).flatMap(c=>Object.keys(c).filter(k=>k.startsWith("EVT"))))].filter(k=>year==="all"||k.includes(year));
+    const head=["Cotisant","Mensuel prévu",...months.map(ymShort),...evs.map(k=>k.slice(4)),"Total","Mois en retard (12 mois)"];
+    const rows=S.donors.items.filter(d=>{ const c=cov[d.id]||{}; return d.active || months.some(m=>c[m]) || evs.some(k=>c[k]); }).map(d=>{
+      const c=cov[d.id]||{}, b=donorBounds(d,cov);
+      const vals=months.map(m=>c[m]||(cellStatus(d,m,cov,b)==="late"?"retard":""));
+      const ev=evs.map(k=>c[k]||"");
+      return [dN(d.id), d.anon?"":d.monthly, ...vals, ...ev, sum(months,m=>c[m]||0)+sum(evs,k=>c[k]||0), d.anon?"":lateMonths(d,cov).length];
+    });
+    rows.push(["TOTAL","",...months.map(m=>sum(S.donors.items,d=>(cov[d.id]||{})[m]||0)),...evs.map(k=>sum(S.donors.items,d=>(cov[d.id]||{})[k]||0)),"",""]);
+    sheets.push({name:"Suivi cotisations", rows:[head,...rows]});
+  }
+  if(what.includes("rec")){
+    const rs=[...S.receipts.items].sort((a,b)=>a.d<b.d?-1:1);
+    sheets.push({name:"Recettes", rows:[["Date","Cotisant","Période concernée","Compte","Montant (DH)"],...rs.map(r=>[fmtDate(r.d),dN(r.n),anD||anF?scrub(r.l):r.l,r.b||"",r.a]),["","","","Total",totRec()]]});
+  }
+  if(what.includes("pay")){
+    const ps=[...S.payments.items].sort((a,b)=>(a.d||"")<(b.d||"")?-1:1);
+    sheets.push({name:"Paiements", rows:[["Date","Famille","Mois","Nature","Montant (DH)"],...ps.map(p=>[fmtDate(p.d),fN(p.f),ymLabel(p.p),p.k==="m"?"Salaire mensuel":(anD||anF?scrub(p.l):p.l)||"Aide exceptionnelle",p.a]),["","","","Total",totPay()]]});
+  }
+  if(what.includes("fam")){
+    const head = anF ? ["Famille","Nb d'enfants","Âges","Depuis","Fin","Salaire mensuel","Total versé"] : ["Famille","Ville","Téléphone","Mère","Père","Enfants","Depuis","Fin","Salaire mensuel","Total versé"];
+    const rows=S.families.items.map(f=>{ const tot=sum(S.payments.items.filter(p=>p.f===f.id),p=>p.a); const kids=f.children||[];
+      return anF ? [fN(f.id), kids.length||f.kids, kids.map(k=>age(k.born)).filter(a=>a!=null).join(", "), fmtDate(f.start), f.end?fmtDate(f.end):"En cours", f.monthly, tot]
+        : [f.name,f.city||"",f.phone||"",(f.mother||{}).name||"",(f.father||{}).name||"",kids.map(k=>k.name+(age(k.born)!=null?" ("+age(k.born)+" ans)":"")).join(" ; "),fmtDate(f.start),f.end?fmtDate(f.end):"En cours",f.monthly,tot]; });
+    sheets.push({name:"Familles", rows:[head,...rows]});
+  }
+  if(what.includes("treso")){
+    const lr=lastReal();
+    const rows=[["Rubrique","Montant (DH)"],["Recettes cumulées",totRec()],["Paiements cumulés",totPay()],["Trésorerie théorique à ce jour",totRec()-totPay()]];
+    if(lr){ rows.push(["",""],["Dernier solde réel ("+fmtDate(lr.d)+")",realTotal(lr)],["Trésorerie théorique à cette date",theoAt(lr.d)],["Écart",realTotal(lr)-theoAt(lr.d)]); }
+    sheets.push({name:"Trésorerie", rows});
+  }
+  return sheets;
+}
+function toCSV(rows){ return "\ufeff"+rows.map(r=>r.map(v=>{ const s=String(v??""); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(";")).join("\r\n"); }
+async function saveFile(filename, data){
+  const blob = data instanceof Blob ? data : new Blob([data],{type:"application/octet-stream"});
+  try{
+    const file = new File([blob], filename, {type: blob.type || "application/octet-stream"});
+    if(matchMedia("(pointer:coarse)").matches && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:filename}); toast("Fichier prêt : "+filename); return;
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  try{
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000); toast("Fichier téléchargé : "+filename);
+  }catch(e){ toast("Téléchargement impossible"); }
+}
+function anonData(){
+  const {dm,fm}=anonMaps(), scrub=scrubber(true,true), D=JSON.parse(JSON.stringify(S));
+  D.donors.items.forEach(d=>{ if(!d.anon){ d.name=dm[d.id]; } d.phone=""; d.note=""; });
+  D.families.items.forEach(f=>{ f.name=fm[f.id]; f.city=""; f.phone=""; f.note=""; f.mother={}; f.father={}; (f.children||[]).forEach((k,i)=>{ k.name="Enfant "+(i+1); k.born=k.born?k.born.slice(0,4)+"-01-01":""; }); });
+  D.receipts.items.forEach(r=>r.l=scrub(r.l)); D.payments.items.forEach(p=>p.l=scrub(p.l));
+  D.treasury.reals.forEach(r=>r.note=scrub(r.note));
+  D.meta.name=(S.meta.name||"Sanad")+" (copie anonymisée)";
+  return D;
+}
+async function saveCopy(anon){
+  const D = anon ? anonData() : JSON.parse(JSON.stringify(S));
+  D.meta.savedAt=new Date().toISOString();
+  D.meta.dataset = anon ? "anon-"+Date.now().toString(36) : (S.meta.dataset||"main");
+  const json=JSON.stringify(D).replace(/</g,"\u003c");
+  const html=TEMPLATE.replace(/(<script type="application\/json" id="seed">)[\s\S]*?(<\/script>)/, (m,a,b)=>a+json+b);
+  await saveFile((anon?"sanad-anonyme-":"sanad-")+today()+".html", new Blob([html],{type:"text/html"}));
+}
+function workbook(sheets){
+  const wb=XLSX.utils.book_new();
+  sheets.forEach(s=>{ const ws=XLSX.utils.aoa_to_sheet(s.rows); ws["!cols"]=s.rows[0].map((_,i)=>({wch:Math.min(40,Math.max(10,...s.rows.map(r=>String(r[i]??"").length+2)))})); XLSX.utils.book_append_sheet(wb, ws, s.name.slice(0,31)); });
+  return new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})]);
+}
+async function doExport(){
+  const what=$$("#exWhat input:checked").map(i=>i.value); if(!what.length){ toast("Cochez au moins un tableau"); return; }
+  const anD=$("#anD").checked, anF=$("#anF").checked, y=$("#exY").value, fmt=$("#exFmt").value;
+  const sheets=buildSheets(what,y,anD,anF), tag=(anD||anF)?"-anonyme":"", stamp=today();
+  if(fmt==="csv" || typeof XLSX==="undefined"){
+    if(fmt!=="csv") toast("Excel indisponible hors connexion : export en CSV");
+    if(sheets.length>1) toast("CSV : seul le premier tableau coché est exporté");
+    await saveFile(`${sheets[0].name.toLowerCase().replace(/\s+/g,"-")}${tag}-${stamp}.csv`, toCSV(sheets[0].rows)); return;
+  }
+  await saveFile(`sanad${tag}-${stamp}.xlsx`, workbook(sheets));
+}
+async function doIndividual(){
+  const id=+$("#indD").value, d=donorById(id); if(!d) return;
+  const cov=coverage(), c=cov[id]||{}, recs=S.receipts.items.filter(r=>r.n===id).sort((a,b)=>a.d<b.d?-1:1);
+  const months=Object.keys(c).sort();
+  const sheets=[
+    {name:"Mes versements", rows:[["Date","Période concernée","Compte","Montant (DH)"],...recs.map(r=>[fmtDate(r.d),scrubber(false,true)(r.l),r.b||"",r.a]),["","","Total",sum(recs,r=>r.a)]]},
+    {name:"Mois couverts", rows:[["Mois","Montant (DH)"],...months.map(k=>[k.startsWith("EVT")?k.slice(4):ymLabel(k),c[k]]),["Total",sum(months,k=>c[k])]]}
+  ];
+  const fn=`releve-${d.name.toLowerCase().replace(/[^a-z0-9]+/gi,"-")}-${today()}`;
+  if(typeof XLSX==="undefined") await saveFile(fn+".csv", toCSV(sheets[0].rows)); else await saveFile(fn+".xlsx", workbook(sheets));
+}
+async function doBackup(){ await saveFile(`sauvegarde-sanad-${today()}.json`, JSON.stringify({app:"caisse-solidaire",saved:new Date().toISOString(),data:S})); }
+function restoreFile(file){
+  if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(rd.result); const data=j.data||j;
+      if(!data.donors||!data.receipts||!data.payments) throw new Error("format");
+      if(S && !confirmBox("Remplacer toutes les données actuelles par cette sauvegarde ?")) return;
+      const ds=S&&S.meta&&S.meta.dataset; const b=blank(); S={}; DOCS.forEach(d=>S[d]=data[d]||b[d]); S.meta.dataset=ds||S.meta.dataset||"main"; touch(...DOCS); route(); toast("Sauvegarde restaurée");
+    }catch(e){ toast("Ce fichier n'est pas une sauvegarde de la caisse"); }
+  };
+  rd.readAsText(file);
+}
+
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+boot();
+</script>
+</body>
+</html>
